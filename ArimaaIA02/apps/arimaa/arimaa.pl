@@ -1,7 +1,8 @@
-:- module(bot,[get_moves/3]).
+%:- module(bot,[get_moves/3]).
 	
 % default call
-get_moves([[[1,0],[2,0]],[[0,0],[1,0]],[[0,1],[0,0]],[[0,0],[0,1]]], Gamestate, Board).
+get_moves(Moves, [],[]).
+get_moves([[[1,0],[2,0]],[[0,0],[1,0]],[[0,1],[0,0]],[[0,0],[0,1]]], _, _).
 
 % A few comments but all is explained in README of github
 
@@ -50,7 +51,22 @@ checkVEPF([Xp, Yp, Anp, Sidep], [[X, Y, An, Side] | Q], VoisinsEneForts) :- chec
 
 	% Tests :
 	voisin_enemie_plus_fort([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,dog,gold],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver]], V).
+	
+	
 % ------------------------------------------------------------------------------
+
+
+% Mouvement possible d'un pion
+% MouvementPossible(Pion, Mouvement, Gamestate, Board)
+MouvementPossible(Pion, [], Gamestate, Board) :- voisin_enemie_plus_fort(Pion, Board, VoisinsEneForts), 
+
+
+
+
+
+
+
+
 
 est_plus_faible(rabbit, cat).
 est_plus_faible(rabbit, dog).

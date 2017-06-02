@@ -1,0 +1,7 @@
++ mouvement possible (distinction lapin/le reste,
+					  case libre autour,
+					  présence ennemie + fort mais alié à coté,
+					  deplacement dans le piège avec alié à coté (du piège),
+					  dans le dernier cas, aller dans un piège sans alié)
+	+ mouvement possible lapin (cases libres autour sauf derrière, et idem qu'au dessus)
+	
