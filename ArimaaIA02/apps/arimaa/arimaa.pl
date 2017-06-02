@@ -1,7 +1,6 @@
 %:- module(bot,[get_moves/3]).
 	
 % default call
-get_moves(Moves, [],[]).
 get_moves([[[1,0],[2,0]],[[0,0],[1,0]],[[0,1],[0,0]],[[0,0],[0,1]]], _, _).
 
 % A few comments but all is explained in README of github
@@ -37,8 +36,8 @@ voisins([Xp, Yp, Anp, Sidep], [[X, Y, An, Side] | Q], [[X, Y, An, Side] | Vois])
 voisins([Xp, Yp, Anp, Sidep], [[X, Y, An, Side] | Q], Vois) :- voisins([Xp, Yp, Anp, Sidep], Q, Vois). % cas piece non voisine
 
 	% Tests :
-	voisins([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,rabbit,silver],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver]], V).
-	voisins([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,rabbit,silver],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver],[0,5,rabbit,silver],[0,6,rabbit,silver],[0,7,rabbit,silver],[1,0,camel,silver],[1,1,cat,silver],[1,2,rabbit,silver],[1,3,dog,silver],[1,4,rabbit,silver],[1,5,horse,silver],[1,6,dog,silver],[1,7,cat,silver],[2,7,rabbit,gold],[6,0,cat,gold],[6,1,horse,gold],[6,2,camel,gold],[6,3,elephant,gold],[6,4,rabbit,gold],[6,5,dog,gold],[6,6,rabbit,gold],[7,0,rabbit,gold],[7,1,rabbit,gold],[7,2,rabbit,gold],[7,3,cat,gold],[7,4,dog,gold],[7,5,rabbit,gold],[7,6,horse,gold],[7,7,rabbit,gold]], V).
+	% voisins([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,rabbit,silver],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver]], V).
+	% voisins([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,rabbit,silver],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver],[0,5,rabbit,silver],[0,6,rabbit,silver],[0,7,rabbit,silver],[1,0,camel,silver],[1,1,cat,silver],[1,2,rabbit,silver],[1,3,dog,silver],[1,4,rabbit,silver],[1,5,horse,silver],[1,6,dog,silver],[1,7,cat,silver],[2,7,rabbit,gold],[6,0,cat,gold],[6,1,horse,gold],[6,2,camel,gold],[6,3,elephant,gold],[6,4,rabbit,gold],[6,5,dog,gold],[6,6,rabbit,gold],[7,0,rabbit,gold],[7,1,rabbit,gold],[7,2,rabbit,gold],[7,3,cat,gold],[7,4,dog,gold],[7,5,rabbit,gold],[7,6,horse,gold],[7,7,rabbit,gold]], V).
 
 % ------------------------------------------------------------------------------
 voisin_enemie_plus_fort(Pion, Board, VoisinsEneForts) :- voisins(Pion, Board, Voisins), checkVEPF(Pion, Voisins, VoisinsEneForts).
@@ -50,15 +49,22 @@ checkVEPF([Xp, Yp, Anp, Sidep], [[X, Y, An, Side] | Q], [[X, Y, An, Side]|Voisin
 checkVEPF([Xp, Yp, Anp, Sidep], [[X, Y, An, Side] | Q], VoisinsEneForts) :- checkVEPF([Xp, Yp, Anp, Sidep], Q, VoisinsEneForts).
 
 	% Tests :
-	voisin_enemie_plus_fort([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,dog,gold],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver]], V).
+	% voisin_enemie_plus_fort([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,dog,gold],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver]], V).
 	
 	
 % ------------------------------------------------------------------------------
 
+retire_case_en_dehors(X, Y, CasesL) :- Xn is X-1, Xp is X+1, Yn is Y-1, Yp is Y+1, delete([[Xn, Y], [Xp, Y], [X, Yn], [X, Yp]], [-1, _], C1), delete(C1, [8, _], C2), delete(C2, [_, -1], C3), delete(C3, [_, 8], CasesL).
+retire_case_avec_voisin(CasesL, [], CasesL):- !.
+retire_case_avec_voisin(CasesL, [[X, Y, _, _] | Q], CasesP) :- retire_case_avec_voisin(CasesL, Q, CasesV), delete(CasesV, [X, Y], CasesP).
+cases_libres([X, Y, An, Side], Board, Cases) :- voisins([X, Y, An, Side], Board, Vois), retire_case_en_dehors(X,Y,CasesL), retire_case_avec_voisin(CasesL, Vois, Cases).
+ 
+% cases_libres([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,rabbit,silver],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver],[0,5,rabbit,silver],[0,6,rabbit,silver],[0,7,rabbit,silver],[1,0,camel,silver],[1,1,cat,silver],[1,2,rabbit,silver],[1,3,dog,silver],[1,4,rabbit,silver],[1,5,horse,silver],[1,6,dog,silver],[1,7,cat,silver],[2,7,rabbit,gold],[6,0,cat,gold],[6,1,horse,gold],[6,2,camel,gold],[6,3,elephant,gold],[6,4,rabbit,gold],[6,5,dog,gold],[6,6,rabbit,gold],[7,0,rabbit,gold],[7,1,rabbit,gold],[7,2,rabbit,gold],[7,3,cat,gold],[7,4,dog,gold],[7,5,rabbit,gold],[7,6,horse,gold],[7,7,rabbit,gold]], V).
+% cases_libres([1,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,rabbit,silver],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver],[0,5,rabbit,silver],[0,6,rabbit,silver],[0,7,rabbit,silver],[1,0,camel,silver],[1,1,cat,silver],[1,2,rabbit,silver],[1,3,dog,silver],[1,4,rabbit,silver],[1,5,horse,silver],[1,6,dog,silver],[1,7,cat,silver],[2,7,rabbit,gold],[6,0,cat,gold],[6,1,horse,gold],[6,2,camel,gold],[6,3,elephant,gold],[6,4,rabbit,gold],[6,5,dog,gold],[6,6,rabbit,gold],[7,0,rabbit,gold],[7,1,rabbit,gold],[7,2,rabbit,gold],[7,3,cat,gold],[7,4,dog,gold],[7,5,rabbit,gold],[7,6,horse,gold],[7,7,rabbit,gold]], V).
 
 % Mouvement possible d'un pion
 % MouvementPossible(Pion, Mouvement, Gamestate, Board)
-MouvementPossible(Pion, [], Gamestate, Board) :- voisin_enemie_plus_fort(Pion, Board, VoisinsEneForts), 
+% MouvementPossible(Pion, [], Gamestate, Board) :- voisin_enemie_plus_fort(Pion, Board, VoisinsEneForts), 
 
 
 
