@@ -1,7 +1,9 @@
-%:- module(bot,[get_moves/3]).
+:- module(bot,[get_moves/3]).
 	
 % default call
-get_moves([[[1,0],[2,0]],[[0,0],[1,0]],[[0,1],[0,0]],[[0,0],[0,1]]], _, _).
+
+get_moves([[[1,0],[2,0]],[[0,0],[1,0]],[[0,1],[0,0]],[[0,0],[0,1]]], Gamestate, Board).
+
 
 % A few comments but all is explained in README of github
 
@@ -49,10 +51,13 @@ checkVEPF([Xp, Yp, Anp, Sidep], [[X, Y, An, Side] | Q], [[X, Y, An, Side]|Voisin
 checkVEPF([Xp, Yp, Anp, Sidep], [[X, Y, An, Side] | Q], VoisinsEneForts) :- checkVEPF([Xp, Yp, Anp, Sidep], Q, VoisinsEneForts).
 
 	% Tests :
+
 	% voisin_enemie_plus_fort([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,dog,gold],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver]], V).
-	
-	
+	% voisin_enemie_plus_fort([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,dog,gold],[0,1,loup,silver],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver]], V).
+
 % ------------------------------------------------------------------------------
+voisin_allie(Pion, Board, VoisinsAllie) :- voisins(Pion, Board, Voisins), checkVA(Pion, Voisins, VoisinsAllie).
+
 
 retire_case_en_dehors(X, Y, CasesL) :- Xn is X-1, Xp is X+1, Yn is Y-1, Yp is Y+1, delete([[Xn, Y], [Xp, Y], [X, Yn], [X, Yp]], [-1, _], C1), delete(C1, [8, _], C2), delete(C2, [_, -1], C3), delete(C3, [_, 8], CasesL).
 retire_case_avec_voisin(CasesL, [], CasesL):- !.
@@ -67,12 +72,24 @@ cases_libres([X, Y, An, Side], Board, Cases) :- voisins([X, Y, An, Side], Board,
 % MouvementPossible(Pion, [], Gamestate, Board) :- voisin_enemie_plus_fort(Pion, Board, VoisinsEneForts), 
 
 
+checkVA(Pion, [], []).
+checkVA([Xp, Yp, Anp, Sidep], [[X, Y, An, Side] | Q], [[X, Y, An, Side]|VoisinsAllie]) :- Sidep = Side, checkVA([Xp, Yp, Anp, Sidep], Q, VoisinsAllie), !.
+checkVA([Xp, Yp, Anp, Sidep], [[X, Y, An, Side] | Q], VoisinsAllie) :- checkVA([Xp, Yp, Anp, Sidep], Q, VoisinsAllie).
+	
+	% tests
+	% voisin_allie([0,0,rabbit,silver], [[0,0,rabbit,silver],[0,1,dog,gold],[0,1,loup,silver],[0,2,horse,silver],[0,3,rabbit,silver],[0,4,elephant,silver]], V).
+
+% présence ennemie + fort mais alié à coté, DONC si enemie pas de soutien allie, on renvoie faux
+soutien_alie(Pion, Board) :- voisin_enemie_plus_fort(Pion, Board, V), V=[], !.
+soutien_alie(Pion, Board) :- voisin_enemie_plus_fort(Pion, Board, _), voisin_allie(Pion, Board, V), V\=[].
 
 
+	% tests
+	% soutien_alie([0,0,rabbit,silver], [[1,0,rabbit,silver],[0,1,dog,gold],[0,1,loup,silver]]).
+	% soutien_alie([0,0,rabbit,silver], [[1,0,rabbit,silver],[0,1,dog,silver],[0,1,loup,silver]]).
+	% soutien_alie([0,0,rabbit,silver], [[1,0,rabbit,gold],[0,1,dog,silver],[0,2,dog,silver]]).
 
-
-
-
+% ------------------------------------------------------------------------------
 
 est_plus_faible(rabbit, cat).
 est_plus_faible(rabbit, dog).
