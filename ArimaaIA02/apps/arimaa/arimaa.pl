@@ -18,7 +18,21 @@ get_moves(M, Gamestate, Board) :- test(M,Board).
 add_move(NewMove) :- moves(M), retract(moves(M)), asserta(moves([NewMove|M])).
 
 % init moves with an empty list, add a new move to this list, return the new moves with the added move
-test(M,Board) :- asserta(moves([])), botMouvAlea(Board, Board, Mouv), add_move(Mouv), moves(M).
+% botMouvAlea s'effectue 4 fois d'affilés, à chaque fois avec un nouveau board issu du déplacement précédent.
+% Les fonctions add_move sont effectué à l'envers car le logiciel demande à ce que le premier coup à effectué soit le premier de la liste
+test(M,Board) :- asserta(moves([])), botMouvAlea(Board, Board, Mouv, [[-1, -1], [-1, -1]]), 
+					change_board(Board, Mouv, NewBoard1), botMouvAlea(NewBoard1, NewBoard1, Mouv2, Mouv), 
+					change_board(NewBoard1, Mouv2, NewBoard2), botMouvAlea(NewBoard2, NewBoard2, Mouv3, Mouv2),
+					change_board(NewBoard2, Mouv3, NewBoard3), botMouvAlea(NewBoard3, NewBoard3, Mouv4, Mouv3),
+					add_move(Mouv4), add_move(Mouv3), add_move(Mouv2), add_move(Mouv), moves(M).
+
+
+% Donne un nouveau board qui contient les changement lié au dernier mouvement
+change_board([], _, []):- !.
+change_board([[X, Y, Anp, Sidep]| Q], [[X, Y], [X2, Y2]], [[X2, Y2, Anp, Sidep] | Q]):- !.
+change_board([T|Q], Move, [T|Q2]) :- change_board(Q, Move, Q2).
+
+
 % ------------------------------------------------------------------------------
 % [1,0] avec X=1 et Y=0, X axe des ordonées, Y des abscisses en partant du haut gauche du plateau
 % A few comments but all is explained in README of github
@@ -113,7 +127,7 @@ cases_libres([X, Y, An, Side], Board, Cases)       :- voisins([X, Y, An, Side], 
 soutien_alie(Pion, Board) :- voisin_enemie_plus_fort(Pion, Board, V), V=[], !.
 soutien_alie(Pion, Board) :- voisin_enemie_plus_fort(Pion, Board, _), voisin_allie(Pion, Board, V), V\=[].
 % ------------------------------------------------------------------------------
-trap_safe([XTrap,YTrap], [XPion, YPion, AnPion, SidePion], Board) :- \+trap([XTrap,YTrap]), write('Trape introuvable ! veuillez vérifier les informations'), !.
+trap_safe([XTrap,YTrap], [XPion, YPion, AnPion, SidePion], Board) :- \+trap([XTrap,YTrap]), ! . % Si l'emplacement n'est pas une trap, alors il est safe automatiquement
 trap_safe([XTrap,YTrap], [XPion, YPion, AnPion, SidePion], Board) :-  voisin_allie([XTrap, YTrap, AnPion, SidePion], Board, [VoisinsAllieT|VoisinsAllieQ]), VoisinsAllieQ\=[].
   % trap_safe([2,2], [1,2,rabbit,silver], [[1,2,rabbit,silver],[3,2,rabbit,silver]]).
 % ------------------------------------------------------------------------------
@@ -121,7 +135,7 @@ trap_safe([XTrap,YTrap], [XPion, YPion, AnPion, SidePion], Board) :-  voisin_all
 element(X, [X|Q]).
 element(X, [T|Q]) :- element(X, Q).
 % ------------------------------------------------------------------------------
-deplacement_format_bot([Xp, Yp, Anp, Sidep], [], []).
+deplacement_format_bot([Xp, Yp, Anp, Sidep], [], []):- !.
 deplacement_format_bot([Xp, Yp, Anp, Sidep], [[MT1,MT2]|MouvementsQ], [[[Xp,Yp],[MT1,MT2]]|DeplacementsQ]) :- deplacement_format_bot([Xp, Yp, Anp, Sidep], MouvementsQ, DeplacementsQ), !.
   % deplacement_format_bot([1,4,rabbit,silver], [[1,2],[10,10]], Deplacements).
 % ------------------------------------------------------------------------------
@@ -135,11 +149,13 @@ deplacement_format_bot([Xp, Yp, Anp, Sidep], [[MT1,MT2]|MouvementsQ], [[[Xp,Yp],
 % deplacement dans le piège avec alié à coté (du piège) / dans le dernier cas, aller dans un piège sans alié) : fait partie de la strategie donc non gerer ici
 
 % cas enemie plus fort mais pas de soutien allier
-mouvementsPossible([Xp, Yp, Anp, Sidep], Board, []) :- voisin_enemie_plus_fort([Xp, Yp, Anp, Sidep],Board,Enemis), 
-                                                       Enemis\=[], 
+mouvementsPossible([Xp, Yp, Anp, Sidep], Board, []) :- %voisin_enemie_plus_fort([Xp, Yp, Anp, Sidep],Board,Enemis), 
+                                                       %Enemis\=[], 
                                                        \+soutien_alie([Xp, Yp, Anp, Sidep], Board), !.
 % cas enemie plus fort mais soutien allier       
 %mouvementsPossible([Xp, Yp, Anp, Sidep], Board, Mouvements) :- voisin_enemie_plus_fort([Xp, Yp, Anp, Sidep],Board,Enemis), Enemis\=[], soutien_alie([Xp, Yp, Anp, Sidep], Board), cases_libres([Xp, Yp, Anp, Sidep], Board, MouvementsT), deplacement_format_bot([Xp, Yp, Anp, Sidep], MouvementsT, Mouvements), !.
+
+%%%%%%%%%%A VOIRE mais soutien alié ne verifie pas déjà les voisins plus forts ?
 mouvementsPossible([Xp, Yp, Anp, Sidep], Board, Mouvements) :- voisin_enemie_plus_fort([Xp, Yp, Anp, Sidep],Board,Enemis), 
                                                                Enemis\=[], 
                                                                soutien_alie([Xp, Yp, Anp, Sidep], Board), 
@@ -151,7 +167,40 @@ mouvementsPossible([Xp, Yp, Anp, Sidep], Board, Mouvements) :- voisin_enemie_plu
                                                                cases_libres([Xp, Yp, Anp, Sidep], Board, MouvementsT), 
                                                                deplacement_format_bot([Xp, Yp, Anp, Sidep], MouvementsT, Mouvements), !.
 % ------------------------------------------------------------------------------
-botMouvAlea(Board, [], []).
-botMouvAlea(Board, [[XPion, YPion, AnPion, SideP]|Q], Mouvement) :- SideP = silver, AnPion = rabbit, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], Mouvement = TMouv, !.
-botMouvAlea(Board, [[XPion, YPion, AnPion, SideP]|Q], Mouvement) :- botMouvAlea(Board,Q,Mouvement), !.
+
+mouv_opose([[X1, Y1], [X2, Y2]], [[X2, Y2], [X1, Y1]]).
+
+
+
+botMouvAlea(Board, [], [], _).
+% botMouvAlea(Board, [[XPion, YPion, AnPion, SideP]|Q], Mouvement) :- SideP = silver, AnPion = rabbit, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], Mouvement = TMouv, !.
+%botMouvAlea(Board, [[XPion, YPion, AnPion, SideP]|Q], Mouvement, LastMouv) :- SideP = silver, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], \+mouv_opose(TMouv, LastMouv), Mouvement = TMouv, !.
+%botMouvAlea(Board, [[XPion, YPion, AnPion, SideP]|Q], Mouvement, LastMouv) :- botMouvAlea(Board,Q,Mouvement, LastMouv), !.
   %botMouvAlea([[0,0,rabbit,golden],[0,1,dog,silver]], [[0,0,rabbit,golden],[0,1,dog,silver]], M).
+  
+  
+% donne un element aleatoire d'une liste  
+choose([], []).
+choose(List, Elt) :-
+			length(List, Length), random(0, Length, Index), nth0(Index, List, Elt).
+  
+%%%%%%%%%% Si aucun mouvement n'est possible, la fonction risque de tourner à l'infini. Peut-être faire un test "aucun_mouvement" qui teste chaque pions ?
+botMouvAlea(Board, Board, Mouvement, LastMouv) :- choose(Board, [XPion, YPion, AnPion, SideP]),  SideP = silver, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], \+mouv_opose(TMouv, LastMouv), Mouvement = TMouv, !.
+botMouvAlea(Board, Board, Mouvement, LastMouv) :- botMouvAlea(Board,Board,Mouvement, LastMouv), !.
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
