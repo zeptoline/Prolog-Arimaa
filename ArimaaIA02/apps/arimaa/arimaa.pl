@@ -9,7 +9,6 @@
 %       ], Gamestate, Board).
 
 get_moves(M, Gamestate, Board) :- test(M,Board).
-
 % ------------------------------------------------------------------------------
 % declare the dynamic fact
 :- dynamic moves/1.
@@ -20,6 +19,7 @@ add_move(NewMove) :- moves(M), retract(moves(M)), asserta(moves([NewMove|M])).
 % init moves with an empty list, add a new move to this list, return the new moves with the added move
 % botMouvAlea s'effectue 4 fois d'affilés, à chaque fois avec un nouveau board issu du déplacement précédent.
 % Les fonctions add_move sont effectué à l'envers car le logiciel demande à ce que le premier coup à effectué soit le premier de la liste
+
 test(M,Board) :- asserta(moves([])), botMouv(Board, Board, Mouv, [[-1, -1], [-1, -1]]), 
 					change_board(Board, Mouv, NewBoard1), botMouv(NewBoard1, NewBoard1, Mouv2, Mouv), 
 					change_board(NewBoard1, Mouv2, NewBoard2), botMouv(NewBoard2, NewBoard2, Mouv3, Mouv2),
@@ -27,11 +27,16 @@ test(M,Board) :- asserta(moves([])), botMouv(Board, Board, Mouv, [[-1, -1], [-1,
 					add_move(Mouv4), add_move(Mouv3), add_move(Mouv2), add_move(Mouv), moves(M).
 
 
-% Donne un nouveau board qui contient les changement lié au dernier mouvement
-change_board([], _, []):- !.
-change_board([[X, Y, Anp, Sidep]| Q], [[X, Y], [X2, Y2]], [[X2, Y2, Anp, Sidep] | Q]):- !.
-change_board([T|Q], Move, [T|Q2]) :- change_board(Q, Move, Q2).
+% ------------------------------------------------------------------------------
+% -------------------------------- NOTES ---------------------------------------
+% PUSH / PULL marchent coter joueur (GOLD)
+% Les traps fonctionnent.
 
+% probleme : YOUR BOT >> {"Moves":[[[1,2],[2,2]],[[0,2],[1,2]],[[2,2],[3,2]],[[0,1],[0,2]]]}
+% probleme : YOUR BOT >> {"Moves":[[[3,6],[4,6]],[[4,5],[5,5]],[[5,5],[6,5]],[[2,2],[3,2]]]}
+% -> probleme quand on veut bouger 2 fois la meme pice
+
+% pour la fin de partie (ensemble de mouvements trouver pour gagner, ne pas rajouter de mouvement inutiles, voir ecran gagnant coter silver)
 
 % ------------------------------------------------------------------------------
 % [1,0] avec X=1 et Y=0, X axe des ordonées, Y des abscisses en partant du haut gauche du plateau
@@ -167,12 +172,17 @@ mouvementsPossible([Xp, Yp, Anp, Sidep], Board, Mouvements) :- voisin_enemie_plu
                                                                cases_libres([Xp, Yp, Anp, Sidep], Board, MouvementsT), 
                                                                deplacement_format_bot([Xp, Yp, Anp, Sidep], MouvementsT, Mouvements), !.
 % ------------------------------------------------------------------------------
-
+% Donne un nouveau board qui contient les changement lié au dernier mouvement
+change_board([], _, []):- !.
+change_board([[X, Y, Anp, Sidep]| Q], [[X, Y], [X2, Y2]], [[X2, Y2, Anp, Sidep] | Q]):- !.
+change_board([T|Q], Move, [T|Q2]) :- change_board(Q, Move, Q2).
+% ------------------------------------------------------------------------------
 mouv_opose([[X1, Y1], [X2, Y2]], [[X2, Y2], [X1, Y1]]).
-
-
-
-botMouvAlea(Board, [], [], _).
+% ------------------------------------------------------------------------------
+% donne un element aleatoire d'une liste  
+choose([], []).
+choose(List, Elt) :- length(List, Length), random(0, Length, Index), nth0(Index, List, Elt).
+% ------------------------------------------------------------------------------
 % botMouvAlea(Board, [[XPion, YPion, AnPion, SideP]|Q], Mouvement) :- SideP = silver, AnPion = rabbit, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], Mouvement = TMouv, !.
 %botMouvAlea(Board, [[XPion, YPion, AnPion, SideP]|Q], Mouvement, LastMouv) :- SideP = silver, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], \+mouv_opose(TMouv, LastMouv), Mouvement = TMouv, !.
 %botMouvAlea(Board, [[XPion, YPion, AnPion, SideP]|Q], Mouvement, LastMouv) :- botMouvAlea(Board,Q,Mouvement, LastMouv), !.
@@ -208,6 +218,9 @@ botMouv(Board, Board, Mouvement, LastMouv) :- choose(Board, Pion), delete(Board,
 botMouvAlea(Board, Board, Mouvement, LastMouv) :- chooseAlea(Board, [XPion, YPion, AnPion, SideP]),  SideP = silver, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], \+mouv_opose(TMouv, LastMouv), Mouvement = TMouv, !.
 botMouvAlea(Board, Board, Mouvement, LastMouv) :- botMouvAlea(Board,Board,Mouvement, LastMouv), !.
 
+												  
+% ------------------------------------------------------------------------------
+% regles, si pour un lapin il est possible d'arriver sur la 1er ligne adversaire en 4 coups ou moins, il le fait et l'IA gagne
   
   
   
