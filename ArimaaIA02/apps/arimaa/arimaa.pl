@@ -20,10 +20,10 @@ add_move(NewMove) :- moves(M), retract(moves(M)), asserta(moves([NewMove|M])).
 % init moves with an empty list, add a new move to this list, return the new moves with the added move
 % botMouvAlea s'effectue 4 fois d'affilés, à chaque fois avec un nouveau board issu du déplacement précédent.
 % Les fonctions add_move sont effectué à l'envers car le logiciel demande à ce que le premier coup à effectué soit le premier de la liste
-test(M,Board) :- asserta(moves([])), botMouvAlea(Board, Board, Mouv, [[-1, -1], [-1, -1]]), 
-					change_board(Board, Mouv, NewBoard1), botMouvAlea(NewBoard1, NewBoard1, Mouv2, Mouv), 
-					change_board(NewBoard1, Mouv2, NewBoard2), botMouvAlea(NewBoard2, NewBoard2, Mouv3, Mouv2),
-					change_board(NewBoard2, Mouv3, NewBoard3), botMouvAlea(NewBoard3, NewBoard3, Mouv4, Mouv3),
+test(M,Board) :- asserta(moves([])), botMouv(Board, Board, Mouv, [[-1, -1], [-1, -1]]), 
+					change_board(Board, Mouv, NewBoard1), botMouv(NewBoard1, NewBoard1, Mouv2, Mouv), 
+					change_board(NewBoard1, Mouv2, NewBoard2), botMouv(NewBoard2, NewBoard2, Mouv3, Mouv2),
+					change_board(NewBoard2, Mouv3, NewBoard3), botMouv(NewBoard3, NewBoard3, Mouv4, Mouv3),
 					add_move(Mouv4), add_move(Mouv3), add_move(Mouv2), add_move(Mouv), moves(M).
 
 
@@ -180,12 +180,32 @@ botMouvAlea(Board, [], [], _).
   
   
 % donne un element aleatoire d'une liste  
-choose([], []).
-choose(List, Elt) :-
+chooseAlea([], []).
+chooseAlea(List, Elt) :-
 			length(List, Length), random(0, Length, Index), nth0(Index, List, Elt).
   
-%%%%%%%%%% Si aucun mouvement n'est possible, la fonction risque de tourner à l'infini. Peut-être faire un test "aucun_mouvement" qui teste chaque pions ?
-botMouvAlea(Board, Board, Mouvement, LastMouv) :- choose(Board, [XPion, YPion, AnPion, SideP]),  SideP = silver, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], \+mouv_opose(TMouv, LastMouv), Mouvement = TMouv, !.
+
+
+chooseLapin([], [-1, -1, lapin, silver]):-  !.
+chooseLapin([[Xb, Yb, lapin, silver]|Q], [Xb, Yb, lapin, silver]):-  chooseLapin(Q, [Xl, Yl, Al, Sl]), Yb > Yl, !.
+chooseLapin([_|Q], Pion):- chooseLapin(Q, Pion).
+  
+  
+% ChoseLapin renvera le lapin le plus avancé.
+choose(Board, Pion) :- chooseLapin(Board, Pion), Pion \= [-1, -1, lapin, silver], !.
+choose(Board, []).
+
+
+
+botMouv(Board, Board, Mouvement, LastMouv) :- choose(Board, []), !, botMouvAlea(Board, Board, Mouvement, LastMouv).
+%chose n'a pas renvoyé un element vide
+botMouv(Board, Board, Mouvement, LastMouv) :- choose(Board, [XPion, YPion, AnPion, SideP]),  SideP = silver, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], \+mouv_opose(TMouv, LastMouv), Mouvement = TMouv, !.
+botMouv(Board, Board, Mouvement, LastMouv) :- choose(Board, Pion), delete(Board, Pion, Board2) ,botMouv(Board2,Board2,Mouvement, LastMouv), !.
+
+
+
+
+botMouvAlea(Board, Board, Mouvement, LastMouv) :- chooseAlea(Board, [XPion, YPion, AnPion, SideP]),  SideP = silver, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], \+mouv_opose(TMouv, LastMouv), Mouvement = TMouv, !.
 botMouvAlea(Board, Board, Mouvement, LastMouv) :- botMouvAlea(Board,Board,Mouvement, LastMouv), !.
 
   
