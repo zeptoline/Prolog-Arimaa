@@ -19,23 +19,26 @@ add_move(NewMove) :- moves(M), retract(moves(M)), asserta(moves([NewMove|M])).
 % init moves with an empty list, add a new move to this list, return the new moves with the added move
 % botMouvAlea s'effectue 4 fois d'affilés, à chaque fois avec un nouveau board issu du déplacement précédent.
 % Les fonctions add_move sont effectué à l'envers car le logiciel demande à ce que le premier coup à effectué soit le premier de la liste
+
 test(M,Board) :- asserta(moves([])), 
-                 botMouvAlea(Board, Board, Mouv, [[-1, -1], [-1, -1]]), change_board(Board, Mouv, NewBoard1), 
-                 botMouvAlea(NewBoard1, NewBoard1, Mouv2, Mouv), change_board(NewBoard1, Mouv2, NewBoard2), 
+                 botMouvAlea(Board, Board, Mouv1, [[-1, -1], [-1, -1]]), change_board(Board, Mouv1, NewBoard1), 
+                 botMouvAlea(NewBoard1, NewBoard1, Mouv2, Mouv1), change_board(NewBoard1, Mouv2, NewBoard2), 
                  botMouvAlea(NewBoard2, NewBoard2, Mouv3, Mouv2), change_board(NewBoard2, Mouv3, NewBoard3), 
                  botMouvAlea(NewBoard3, NewBoard3, Mouv4, Mouv3),
-                 add_move(Mouv4), add_move(Mouv3), add_move(Mouv2), add_move(Mouv), 
+                 add_move(Mouv4), 
+                 add_move(Mouv3), 
+                 add_move(Mouv2), 
+                 add_move(Mouv1), 
                  moves(M).
+
 % ------------------------------------------------------------------------------
 % -------------------------------- NOTES ---------------------------------------
 % PUSH / PULL marchent coter joueur (GOLD)
 % Les traps fonctionnent.
 
-% probleme : YOUR BOT >> {"Moves":[[[1,2],[2,2]],[[0,2],[1,2]],[[2,2],[3,2]],[[0,1],[0,2]]]}
-% probleme : YOUR BOT >> {"Moves":[[[3,6],[4,6]],[[4,5],[5,5]],[[5,5],[6,5]],[[2,2],[3,2]]]}
-% -> probleme quand on veut bouger 2 fois la meme pice
+% -> probleme quand on veut bouger 2 fois la meme pice -> resolu
 
-% pour la fin de partie (ensemble de mouvements trouver pour gagner, ne pas rajouter de mouvement inutiles, voir ecran gagnant coter silver)
+% OPTIONEL : pour la fin de partie (ensemble de mouvements trouver pour gagner, ne pas rajouter de mouvement inutiles, voir ecran gagnant coter silver)
 
 % ------------------------------------------------------------------------------
 % [1,0] avec X=1 et Y=0, X axe des ordonées, Y des abscisses en partant du haut gauche du plateau
@@ -197,20 +200,94 @@ botMouvAlea(Board, Board, Mouvement, LastMouv) :- choose(Board, [XPion, YPion, A
                                                   Mouvement = TMouv, !.
 botMouvAlea(Board, Board, Mouvement, LastMouv) :- botMouvAlea(Board,Board,Mouvement, LastMouv), !.
 % ------------------------------------------------------------------------------
+% ------------------------------------------------------------------------------
+% ------------------------------------------------------------------------------
+% ------------------------------------------------------------------------------
+% -----------------------       TESTS ANTOINE       ----------------------------
+
+%oneTurnGoal(Board):- .
+%% oneTurnGoal(Board):- liste_lapin_proche_victoire(Board, ListeLapins), mouvementsPossible([6,_,rabbit,silver], Board, Mouvements), write('yes').
+%%   % oneTurnGoal([[6,0,rabbit,silver],[3,2,rabbit,silver]]).
+
+%% liste_lapin_proche_victoire([], []).
+%% liste_lapin_proche_victoire([[X, Y, rabbit, silver]|Qboard], [[X, Y, rabbit, silver]|Liste]):- X >= 3, liste_lapin_proche_victoire(Qboard, Liste), !.
+%% liste_lapin_proche_victoire([TBoard|Qboard], Liste):- liste_lapin_proche_victoire(Qboard, Liste).
+
+%% trouver_lapin_gagnant(Board, [[X, Y, rabbit, silver]|Liste]) :- calcul_arriver(Board, [X, Y, rabbit, silver]), !.
+%% trouver_lapin_gagnant(Board, [[X, Y, rabbit, silver]|Liste]) :- trouver_lapin_gagnant(Board, Liste).
+
+%% calcul_arriver(Board, [7, Y, rabbit, silver], CasesDejaVisiter, NbDeplaDispo).
+%% calcul_arriver(Board, [X, Y, rabbit, silver], CasesDejaVisiter, 0) :- false, !.
+%% calcul_arriver(Board, [X, Y, rabbit, silver], CasesDejaVisiter, NbDeplaDispo) :- mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), 
+%%                                                                                  change_board(NewBoard2, Mouv3, NewBoard3).
+
+
+
+%% mouvementsPossible([Xp, Yp, Anp, Sidep], Board, Mouvements)
+
+
+%calcul_arriver(Board, [X, Y, rabbit, silver], CasesDejaVisiter, NbDeplaDispo) :- mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), 
+  % liste_lapin_proche_victoire([[6,0,rabbit,silver],[3,2,rabbit,silver]], Liste).
+
 % regles, si pour un lapin il est possible d'arriver sur la 1er ligne adversaire en 4 coups ou moins, il le fait et l'IA gagne
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+% cas mouvement possible, arret dur trap, pas d'ally, on ne continu pas le traitement
+                                                               
+
+cheminsPossibles([Xp, Yp, Anp, Sidep], Board, [], [], 0):-!.
+cheminsPossibles([Xp, Yp, Anp, Sidep], Board, CheminLocal, LChemins, NbDeplPos):- % On comence a 4 > 3 > 2 > 1 > 0(STOP)
+  write(LChemins),
+  nl,
+  NbDeplPosBis is NbDeplPos-1,
+  mouvementsPossible([Xp, Yp, Anp, Sidep], Board, Mouvements),
+  bouclageMouvement([Xp, Yp, Anp, Sidep], Board, LChemins, NbDeplPosBis, Mouvements).
+
+bouclageMouvement([X, Y, Anp, Sidep], Board, [], NbDeplPos, []):-!.
+bouclageMouvement([X, Y, Anp, Sidep], Board, LChemin2, NbDeplPos, [[[Xd,Yd],[Xa,Ya]]|MouvementsQ]):-
+  write('Mouvement'), 
+  nl,
+  cheminsPossibles([Xa, Ya, Anp, Sidep], Board, CheminLocal, Liste, NbDeplPos),
+  ajoutSi([[[Xd,Yd],[Xa,Ya]]|CheminLocal], LChemin1, LChemin2),
+  bouclageMouvement([X, Y, Anp, Sidep], Board, LChemin1, NbDeplPos, MouvementsQ).
+  %% ajoutSi([[[Xd,Yd],[Xa,Ya]]|CheminLocal], ListeChemins, ListeCheminsCalculer),
+  %% cheminsPossibles([Xa, Ya, Anp, Sidep], Board, [[[Xd,Yd],[Xa,Ya]]|Chemin], ListeChemins, NbDeplPos),
+  %% ajoutSi([[[Xd,Yd],[Xa,Ya]]|Chemin], ListeChemins, ListeCheminsCalculer). % sa place ici? 
+
+  % mouvementsPossible([1,1,rabbit,silver], [[1,1,rabbit,silver],[3,2,rabbit,silver]], Mouvements).
+  % cheminsPossibles([1,1,rabbit,silver], [[1,1,rabbit,silver],[3,2,rabbit,silver]], CheminLocal, ListeC, 1).
+  % ListeC = [[[[1, 1], [2, 1]]], [[[1, 1], [1, 0]]], [[[1, 1], [1, 2]]]|_8986].
+
+ajoutSi(Chemin, [], Chemin) :- !.
+ajoutSi(Chemin, ListeChemins, ListeChemins) :- element(Chemin, ListeChemins), !.
+ajoutSi(Chemin, ListeChemins, [Chemin|ListeChemins]). 
+
+%% add_move(NewMove) :- moves(M), retract(moves(M)), asserta(moves([NewMove|M])).
+
+%% % init moves with an empty list, add a new move to this list, return the new moves with the added move
+%% % botMouvAlea s'effectue 4 fois d'affilés, à chaque fois avec un nouveau board issu du déplacement précédent.
+%% % Les fonctions add_move sont effectué à l'envers car le logiciel demande à ce que le premier coup à effectué soit le premier de la liste
+
+%% test(M,Board) :- asserta(moves([])), 
+%%                  botMouvAlea(Board, Board, Mouv1, [[-1, -1], [-1, -1]]), change_board(Board, Mouv1, NewBoard1), 
+%%                  botMouvAlea(NewBoard1, NewBoard1, Mouv2, Mouv1), change_board(NewBoard1, Mouv2, NewBoard2), 
+%%                  botMouvAlea(NewBoard2, NewBoard2, Mouv3, Mouv2), change_board(NewBoard2, Mouv3, NewBoard3), 
+%%                  botMouvAlea(NewBoard3, NewBoard3, Mouv4, Mouv3),
+%%                  add_move(Mouv4), 
+%%                  add_move(Mouv3), 
+%%                  add_move(Mouv2), 
+%%                  add_move(Mouv1), 
+%%                  moves(M).
+
+  % bot:ajoutSi([2],[],M)"? yes - > M = [[2]].
+
+
+  % oneTurnGoal([[6,0,rabbit,silver],[3,2,rabbit,silver]]).
+  % mouvementsPossible([6,0,rabbit,silver], [[6,0,rabbit,silver],[3,2,rabbit,silver]], [[[Xd,Yd],[X1,Y1]],[[Xd,Yd],[X2,Y2]],[[Xd,Yd],[X3,Y3]],[[Xd,Yd],[X4,Y4]]]).
+  % mouvementsPossible([6,0,rabbit,silver], [[6,0,rabbit,silver],[3,2,rabbit,silver]], [[[Xd,Yd],[X1,Y1]],[[Xd,Yd],[X2,Y2]]]).
+  % mouvementsPossible([6,0,rabbit,silver], [[6,0,rabbit,silver],[3,2,rabbit,silver]], Mouv).
+
+
+% PROTOTYPE REGLE : cheminsPossibles([Xp, Yp, Anp, Sidep], Board, Chemin, liste, 4)
+% ------------------------------------------------------------------------------
+% ------------------------------------------------------------------------------
