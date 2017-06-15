@@ -21,10 +21,10 @@ add_move(NewMove) :- moves(M), retract(moves(M)), asserta(moves([NewMove|M])).
 % Les fonctions add_move sont effectué à l'envers car le logiciel demande à ce que le premier coup à effectué soit le premier de la liste
 
 test(M,Board) :- asserta(moves([])), 
-                 botMouvAlea(Board, Board, Mouv1, [[-1, -1], [-1, -1]]), change_board(Board, Mouv1, NewBoard1), 
-                 botMouvAlea(NewBoard1, NewBoard1, Mouv2, Mouv1), change_board(NewBoard1, Mouv2, NewBoard2), 
-                 botMouvAlea(NewBoard2, NewBoard2, Mouv3, Mouv2), change_board(NewBoard2, Mouv3, NewBoard3), 
-                 botMouvAlea(NewBoard3, NewBoard3, Mouv4, Mouv3),
+                 botMouv(Board, Board, Mouv1, [[-1, -1], [-1, -1]]), change_board(Board, Mouv1, NewBoard1), 
+                 botMouv(NewBoard1, NewBoard1, Mouv2, Mouv1), change_board(NewBoard1, Mouv2, NewBoard2), 
+                 botMouv(NewBoard2, NewBoard2, Mouv3, Mouv2), change_board(NewBoard2, Mouv3, NewBoard3), 
+                 botMouv(NewBoard3, NewBoard3, Mouv4, Mouv3),
                  add_move(Mouv4), 
                  add_move(Mouv3), 
                  add_move(Mouv2), 
@@ -189,16 +189,38 @@ choose(List, Elt) :- length(List, Length), random(0, Length, Index), nth0(Index,
 %botMouvAlea(Board, [[XPion, YPion, AnPion, SideP]|Q], Mouvement, LastMouv) :- SideP = silver, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], \+mouv_opose(TMouv, LastMouv), Mouvement = TMouv, !.
 %botMouvAlea(Board, [[XPion, YPion, AnPion, SideP]|Q], Mouvement, LastMouv) :- botMouvAlea(Board,Q,Mouvement, LastMouv), !.
   %botMouvAlea([[0,0,rabbit,golden],[0,1,dog,silver]], [[0,0,rabbit,golden],[0,1,dog,silver]], M).
+  
+  
+% donne un element aleatoire d'une liste  
+chooseAlea([], []).
+chooseAlea(List, Elt) :-
+			length(List, Length), random(0, Length, Index), nth0(Index, List, Elt).
+  
 
-%%%%%%%%%% Si aucun mouvement n'est possible, la fonction risque de tourner à l'infini. Peut-être faire un test "aucun_mouvement" qui teste chaque pions ?
-botMouvAlea(Board, [], [], _).
-botMouvAlea(Board, Board, Mouvement, LastMouv) :- choose(Board, [XPion, YPion, AnPion, SideP]), 
-                                                  SideP = silver, 
-                                                  mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), 
-                                                  TMouv\=[], 
-                                                  \+mouv_opose(TMouv, LastMouv), 
-                                                  Mouvement = TMouv, !.
+
+chooseLapin([], [-1, -1, lapin, silver]):-  !.
+chooseLapin([[Xb, Yb, lapin, silver]|Q], [Xb, Yb, lapin, silver]):-  chooseLapin(Q, [Xl, Yl, Al, Sl]), Yb > Yl, !.
+chooseLapin([_|Q], Pion):- chooseLapin(Q, Pion).
+  
+  
+% ChoseLapin renvera le lapin le plus avancé.
+choose(Board, Pion) :- chooseLapin(Board, Pion), Pion \= [-1, -1, lapin, silver], !.
+choose(Board, []).
+
+
+
+botMouv(Board, Board, Mouvement, LastMouv) :- choose(Board, []), !, botMouvAlea(Board, Board, Mouvement, LastMouv).
+%chose n'a pas renvoyé un element vide
+botMouv(Board, Board, Mouvement, LastMouv) :- choose(Board, [XPion, YPion, AnPion, SideP]),  SideP = silver, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], \+mouv_opose(TMouv, LastMouv), Mouvement = TMouv, !.
+botMouv(Board, Board, Mouvement, LastMouv) :- choose(Board, Pion), delete(Board, Pion, Board2) ,botMouv(Board2,Board2,Mouvement, LastMouv), !.
+
+
+
+
+botMouvAlea(Board, Board, Mouvement, LastMouv) :- chooseAlea(Board, [XPion, YPion, AnPion, SideP]),  SideP = silver, mouvementsPossible([XPion, YPion, AnPion, SideP], Board, [TMouv|QMouv]), TMouv\=[], \+mouv_opose(TMouv, LastMouv), Mouvement = TMouv, !.
 botMouvAlea(Board, Board, Mouvement, LastMouv) :- botMouvAlea(Board,Board,Mouvement, LastMouv), !.
+
+												  
 % ------------------------------------------------------------------------------
 % ------------------------------------------------------------------------------
 % ------------------------------------------------------------------------------
